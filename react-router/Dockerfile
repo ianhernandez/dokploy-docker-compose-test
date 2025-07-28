@@ -44,4 +44,4 @@ HEALTHCHECK --interval=30s --timeout=5s \
   CMD wget --spider http://localhost:3000 || exit 1
 
 # Run database initialization (migrations + data restore) then start server
-CMD ["sh", "-c", "pnpm run db:init && pnpm run start"]
+CMD ["sh", "-c", "npx tsx prisma/scripts/debug-startup.ts && pnpm run db:init && pnpm run start"]
