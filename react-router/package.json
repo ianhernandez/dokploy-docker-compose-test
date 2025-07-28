@@ -31,7 +31,10 @@
 		"db:push": "prisma db push",
 		"db:reset": "prisma migrate reset",
 		"db:up": "docker compose up -d db",
-		"db:down": "docker compose down db"
+		"db:down": "docker compose down db",
+		"db:backup": "npx tsx prisma/scripts/backup.ts",
+		"db:restore": "npx tsx prisma/scripts/restore.ts",
+		"db:init": "npx tsx prisma/scripts/startup.ts"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "6.3.1",

@@ -33,12 +33,15 @@ COPY --from=build-env /app/app/generated /app/app/generated
 COPY --from=build-env /app/prisma /app/prisma
 WORKDIR /app
 
-# Install Prisma CLI for migrations
-RUN pnpm add -D prisma
+# Install Prisma CLI and tsx for database initialization
+RUN pnpm add -D prisma tsx
+
+# Install PostgreSQL client for backup/restore functionality
+RUN apk add --no-cache postgresql16-client
 
 # Health check for container readiness
 HEALTHCHECK --interval=30s --timeout=5s \
   CMD wget --spider http://localhost:3000 || exit 1
 
-# Run migrations then start server
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm run start"]
+# Run database initialization (migrations + data restore) then start server
+CMD ["sh", "-c", "pnpm run db:init && pnpm run start"]
