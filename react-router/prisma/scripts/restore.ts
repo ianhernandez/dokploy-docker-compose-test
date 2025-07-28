@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { db } from '../../app/db/db.server';
+import { db } from '../../app/db/db.server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
