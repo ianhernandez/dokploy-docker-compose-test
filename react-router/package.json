@@ -33,7 +33,7 @@
 		"db:up": "docker compose up -d db",
 		"db:down": "docker compose down db",
 		"db:backup": "npx tsx prisma/scripts/backup.ts",
-		"db:restore": "npx tsx prisma/scripts/restore.ts",
+		"db:restore": "npx dotenvx run -- npx tsx prisma/scripts/restore.ts",
 		"db:init": "npx tsx prisma/scripts/startup.ts"
 	},
 	"dependencies": {

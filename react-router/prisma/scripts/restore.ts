@@ -2,10 +2,6 @@ import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { PrismaClient } from '@prisma-generated/client';
-
-// Create standalone database client for restore script
-const db = new PrismaClient();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,16 +25,46 @@ function parseDatabaseUrl(url: string): DatabaseConfig {
   };
 }
 
-async function isDatabaseEmpty(): Promise<boolean> {
+function isDatabaseEmpty(config: DatabaseConfig): boolean {
   try {
-    // Check if any data exists in main tables
-    const [djCount, episodeCount, setCount] = await Promise.all([
-      db.dJ.count(),
-      db.episode.count(),
-      db.dJSet.count(),
-    ]);
+    const env = {
+      ...process.env,
+      PGPASSWORD: config.password
+    };
 
-    return djCount === 0 && episodeCount === 0 && setCount === 0;
+    // Check if we're running locally (need to use Docker) or in container (use psql directly)
+    const isLocal = !existsSync('/.dockerenv') && !process.env.DOKPLOY_PROJECT_NAME;
+
+    const countQueries = [
+      'SELECT COUNT(*) FROM "DJ";',
+      'SELECT COUNT(*) FROM "Episode";',
+      'SELECT COUNT(*) FROM "DJSet";'
+    ];
+
+    let totalRecords = 0;
+
+    for (const query of countQueries) {
+      let result: string;
+
+      if (isLocal) {
+        // Local development: use Docker to run psql
+        result = execSync(`docker exec base-stack-db psql --username=${config.username} --dbname=${config.database} --no-password --tuples-only --command='${query}'`, {
+          env: { ...process.env, PGPASSWORD: config.password },
+          encoding: 'utf8'
+        }).trim();
+      } else {
+        // Container environment: use psql directly
+        result = execSync(`psql --host=${config.host} --port=${config.port} --username=${config.username} --dbname=${config.database} --no-password --tuples-only --command='${query}'`, {
+          env,
+          encoding: 'utf8'
+        }).trim();
+      }
+
+      const count = parseInt(result, 10) || 0;
+      totalRecords += count;
+    }
+
+    return totalRecords === 0;
   } catch (error) {
     console.warn('⚠️ Could not check database state, assuming empty:', error);
     return true;
@@ -64,8 +90,11 @@ async function main() {
   }
 
   try {
+    const config = parseDatabaseUrl(databaseUrl);
+    console.log(`📡 Connecting to database: ${config.database} on ${config.host}:${config.port}`);
+
     // Check if database is empty
-    const isEmpty = await isDatabaseEmpty();
+    const isEmpty = isDatabaseEmpty(config);
 
     if (!isEmpty) {
       console.log('🔍 Database contains data. Checking deployment context...');
@@ -84,9 +113,6 @@ async function main() {
         return;
       }
     }
-
-    const config = parseDatabaseUrl(databaseUrl);
-    console.log(`📡 Connecting to database: ${config.database} on ${config.host}:${config.port}`);
 
     // Read the SQL backup file
     const sqlData = readFileSync(backupPath, 'utf8');
@@ -168,17 +194,37 @@ async function main() {
 
       console.log('✅ Database restore completed successfully!');
 
-      // Verify restore by checking record counts
-      const [djCount, episodeCount, setCount] = await Promise.all([
-        db.dJ.count(),
-        db.episode.count(),
-        db.dJSet.count(),
-      ]);
+      // Verify restore by checking record counts using raw SQL
+      const countQueries = [
+        { name: 'DJs', query: 'SELECT COUNT(*) FROM "DJ";' },
+        { name: 'Episodes', query: 'SELECT COUNT(*) FROM "Episode";' },
+        { name: 'DJ Sets', query: 'SELECT COUNT(*) FROM "DJSet";' }
+      ];
 
       console.log('📊 Restored data summary:');
-      console.log(`   DJs: ${djCount}`);
-      console.log(`   Episodes: ${episodeCount}`);
-      console.log(`   DJ Sets: ${setCount}`);
+
+      for (const { name, query } of countQueries) {
+        try {
+          let result: string;
+
+          if (isLocal) {
+            result = execSync(`docker exec base-stack-db psql --username=${config.username} --dbname=${config.database} --no-password --tuples-only --command='${query}'`, {
+              env: { ...process.env, PGPASSWORD: config.password },
+              encoding: 'utf8'
+            }).trim();
+          } else {
+            result = execSync(`psql --host=${config.host} --port=${config.port} --username=${config.username} --dbname=${config.database} --no-password --tuples-only --command='${query}'`, {
+              env,
+              encoding: 'utf8'
+            }).trim();
+          }
+
+          const count = parseInt(result, 10) || 0;
+          console.log(`   ${name}: ${count}`);
+        } catch (verifyError) {
+          console.warn(`⚠️ Could not verify ${name} count:`, verifyError);
+        }
+      }
 
     } catch (restoreError) {
       console.error('❌ Restore failed:', restoreError);
@@ -191,8 +237,6 @@ async function main() {
       console.error('Error details:', error.message);
     }
     process.exit(1);
-  } finally {
-    await db.$disconnect();
   }
 }
 
