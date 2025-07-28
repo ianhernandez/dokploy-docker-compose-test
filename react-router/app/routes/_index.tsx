@@ -9,7 +9,10 @@ export const meta: MetaFunction = () => {
 
 export const loader = ({ request }: Route.LoaderArgs) => {
 	const _timezoneDate = convertDateToUserTz(new Date(), request)
-	throw redirect("/login")
+	// throw redirect("/login")
+	return {
+		timezoneDate: _timezoneDate,
+	}
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
@@ -56,7 +59,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 
 			<div className="mt-4 w-full text-center text-2xl">{t("hi")}</div>
 			<section className="absolute bottom-1 mb-2 w-full pt-2 pb-1 text-center sm:bottom-2 sm:pb-3 md:mt-0 md:mb-0">
-				Crafted with ❤️ / Time without timezone mismatch {timezoneDate}
+				Crafted with ❤️ / Time without timezone mismatch {timezoneDate ? timezoneDate.toLocaleString() : "N/A"}
 			</section>
 		</div>
 	)

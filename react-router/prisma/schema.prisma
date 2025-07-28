@@ -30,3 +30,52 @@ model Password {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model DJ {
+  id   String @id @default(cuid())
+  name String
+  // add other DJ-specific fields as needed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sets      DJSet[]  @relation("DJSetsByDJ")
+}
+
+model Episode {
+  id            String   @id @default(cuid())
+  title         String
+  episodeNumber Int      @unique // Episode number for reliable ordering
+  releaseDate   DateTime
+  sets          DJSet[]  @relation("SetsInEpisode")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DJSet {
+  id             String  @id @default(cuid())
+  title          String?
+  duration       Int? // in seconds
+  vimeo          String? // optional Vimeo link
+  soundcloud     String? // optional SoundCloud link
+  mixcloud       String? // optional Mixcloud link
+  mediaUrl       String? // e.g. S3 or CDN link
+  thumbnailUrl   String? // local thumbnail path: "/thumbnails/vimeo/{videoId}.jpg"
+  orderInEpisode Int? // optional ordering within an episode
+
+  dj   DJ     @relation("DJSetsByDJ", fields: [djId], references: [id])
+  djId String
+
+  episode   Episode @relation("SetsInEpisode", fields: [episodeId], references: [id])
+  episodeId String
+
+  genres    Genre[]  @relation("GenresOnSets")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Genre {
+  id   String  @id @default(cuid())
+  name String  @unique
+  sets DJSet[] @relation("GenresOnSets")
+}

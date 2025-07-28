@@ -38,8 +38,8 @@ export { Prisma }
 
 
 // file annotations for bundling tools to include these files
-path.join(__dirname, "query_engine-windows.dll.node")
-path.join(process.cwd(), "app/generated/prisma/query_engine-windows.dll.node")
+path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node")
+path.join(process.cwd(), "app/generated/prisma/libquery_engine-darwin-arm64.dylib.node")
 
 /**
  * Model User
@@ -51,5 +51,25 @@ export type User = Prisma.UserModel
  * 
  */
 export type Password = Prisma.PasswordModel
+/**
+ * Model DJ
+ * 
+ */
+export type DJ = Prisma.DJModel
+/**
+ * Model Episode
+ * 
+ */
+export type Episode = Prisma.EpisodeModel
+/**
+ * Model DJSet
+ * 
+ */
+export type DJSet = Prisma.DJSetModel
+/**
+ * Model Genre
+ * 
+ */
+export type Genre = Prisma.GenreModel
 
 

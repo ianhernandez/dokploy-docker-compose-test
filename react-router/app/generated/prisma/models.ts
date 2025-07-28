@@ -9,4 +9,8 @@
  */
 export type * from './models/User'
 export type * from './models/Password'
+export type * from './models/DJ'
+export type * from './models/Episode'
+export type * from './models/DJSet'
+export type * from './models/Genre'
 export type * from './commonInputTypes'
