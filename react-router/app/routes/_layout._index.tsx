@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next"
 import { type MetaFunction, redirect } from "react-router"
 import { convertDateToUserTz } from "~/utils/dates"
-import type { Route } from "./+types/_index"
+import type { Route } from "./+types/_layout._index"
 
 export const meta: MetaFunction = () => {
 	return [{ title: "New Remix App" }, { name: "description", content: "Welcome to Remix!" }]
