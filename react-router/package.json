@@ -32,9 +32,10 @@
 		"db:reset": "prisma migrate reset",
 		"db:up": "docker compose up -d db",
 		"db:down": "docker compose down db",
-		"db:backup": "npx tsx prisma/scripts/backup.ts",
+		"db:backup": "npx dotenvx run -- npx tsx prisma/scripts/backup.ts",
 		"db:restore": "npx dotenvx run -- npx tsx prisma/scripts/restore.ts",
-		"db:init": "npx tsx prisma/scripts/startup.ts"
+		"db:init": "npx tsx prisma/scripts/startup.ts",
+		"db:extract-thumbnails": "npx dotenvx run -- npx tsx prisma/scripts/extract-thumbnails.ts"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "6.3.1",

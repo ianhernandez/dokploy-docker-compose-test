@@ -1,5 +1,6 @@
-import type { Route } from "./+types/sets"
+import type { Route } from "./+types/sets._index"
 import { db } from "../db/db.server"
+import { Link } from "react-router"
 
 export async function loader({ request }: Route.LoaderArgs) {
   
@@ -28,6 +29,12 @@ export default function Sets({ loaderData }: Route.ComponentProps) {
           <li key={set.id} className="mb-2">
             {set.dj.name}
             {set.vimeo}
+            <Link to={`/sets/${set.id}`} className="text-blue-500 hover:underline">
+              View Details
+            </Link>
+            {set.thumbnailUrl ? (
+              <img src={set.thumbnailUrl} alt={`${set.dj.name} thumbnail`} className="aspect-video h-20 object-cover" />
+            ) : null }
           </li>
         ))}
       </ul>
