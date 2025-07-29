@@ -71,6 +71,45 @@ function isDatabaseEmpty(config: DatabaseConfig): boolean {
   }
 }
 
+async function clearDatabase(config: DatabaseConfig, isLocal: boolean) {
+  console.log('🧹 Clearing database to ensure clean restore...');
+
+  const clearQueries = [
+    'TRUNCATE TABLE "DJSet" RESTART IDENTITY CASCADE;',
+    'TRUNCATE TABLE "DJ" RESTART IDENTITY CASCADE;',
+    'TRUNCATE TABLE "Episode" RESTART IDENTITY CASCADE;',
+    'TRUNCATE TABLE "Genre" RESTART IDENTITY CASCADE;',
+    'TRUNCATE TABLE "User" RESTART IDENTITY CASCADE;',
+    'TRUNCATE TABLE "Password" RESTART IDENTITY CASCADE;'
+  ];
+
+  const env = {
+    ...process.env,
+    PGPASSWORD: config.password
+  };
+
+  for (const query of clearQueries) {
+    try {
+      if (isLocal) {
+        execSync(`docker exec base-stack-db psql --username=${config.username} --dbname=${config.database} --no-password --command='${query}'`, {
+          env: { ...process.env, PGPASSWORD: config.password },
+          stdio: 'pipe'
+        });
+      } else {
+        execSync(`psql --host=${config.host} --port=${config.port} --username=${config.username} --dbname=${config.database} --no-password --command='${query}'`, {
+          env,
+          stdio: 'pipe'
+        });
+      }
+    } catch (error) {
+      // Some tables might not exist yet, which is fine
+      console.log(`⚠️ Note: Could not clear table (may not exist): ${query.split(' ')[2]}`);
+    }
+  }
+
+  console.log('✅ Database cleared successfully');
+}
+
 async function main() {
   console.log('🔄 Starting database restore...');
 
@@ -93,25 +132,27 @@ async function main() {
     const config = parseDatabaseUrl(databaseUrl);
     console.log(`📡 Connecting to database: ${config.database} on ${config.host}:${config.port}`);
 
-    // Check if database is empty
-    const isEmpty = isDatabaseEmpty(config);
+    // Environment detection
+    const isLocal = !existsSync('/.dockerenv') && !process.env.DOKPLOY_PROJECT_NAME;
+    const isContainer = process.env.NODE_ENV === 'production' ||
+      existsSync('/.dockerenv') ||
+      process.env.DOKPLOY_PROJECT_NAME;
 
-    if (!isEmpty) {
-      console.log('🔍 Database contains data. Checking deployment context...');
+    console.log(`🔧 Environment: ${isLocal ? 'Local Development' : 'Container Deployment'}`);
 
-      // Simple heuristic: if we're in a container environment, it's likely a deployment
-      const isContainer = process.env.NODE_ENV === 'production' ||
-        existsSync('/.dockerenv') ||
-        process.env.DOKPLOY_PROJECT_NAME;
+    if (isLocal) {
+      console.log('🏠 Local development environment detected.');
+      console.log('✅ Skipping restore to preserve existing local data');
+      console.log('💡 Your local data takes precedence in development mode');
+      return;
+    }
 
-      if (isContainer) {
-        console.log('🚀 Container deployment detected, proceeding with restore...');
-      } else {
-        console.log('⚠️ Local development with existing data detected.');
-        console.log('💡 If you want to restore anyway, clear your database first with: pnpm run db:reset');
-        console.log('✅ Skipping restore to preserve existing data');
-        return;
-      }
+    if (isContainer) {
+      console.log('🚀 Container deployment detected');
+      console.log('📦 Local data dump will take complete precedence');
+
+      // Always clear database in container deployments to avoid conflicts
+      await clearDatabase(config, isLocal);
     }
 
     // Read the SQL backup file

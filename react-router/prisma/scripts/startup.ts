@@ -44,6 +44,20 @@ async function runDataRestore() {
     return;
   }
 
+  // Environment detection
+  const isLocal = !existsSync('/.dockerenv') && !process.env.DOKPLOY_PROJECT_NAME;
+  const isContainer = process.env.NODE_ENV === 'production' ||
+    existsSync('/.dockerenv') ||
+    process.env.DOKPLOY_PROJECT_NAME;
+
+  console.log(`🔧 Environment: ${isLocal ? 'Local Development' : 'Container Deployment'}`);
+
+  if (isLocal) {
+    console.log('🏠 Local development detected - restore script will preserve your existing data');
+  } else if (isContainer) {
+    console.log('📦 Container deployment detected - local data dump will take precedence');
+  }
+
   try {
     execSync('npx tsx prisma/scripts/restore.ts', {
       stdio: 'inherit',
