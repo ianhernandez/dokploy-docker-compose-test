@@ -4,7 +4,9 @@
  * @returns The embed URL for the video
  */
 export function generateVimeoEmbedUrl(vimeoId: string): string {
-  return `https://player.vimeo.com/video/${vimeoId}`;
+  // Extract video ID if a full URL is provided
+  const videoId = extractVimeoId(vimeoId) || vimeoId;
+  return `https://player.vimeo.com/video/${videoId}`;
 }
 
 /**
@@ -13,7 +15,9 @@ export function generateVimeoEmbedUrl(vimeoId: string): string {
  * @returns The direct page URL for the video
  */
 export function generateVimeoPageUrl(vimeoId: string): string {
-  return `https://vimeo.com/${vimeoId}`;
+  // Extract video ID if a full URL is provided
+  const videoId = extractVimeoId(vimeoId) || vimeoId;
+  return `https://vimeo.com/${videoId}`;
 }
 
 /**
@@ -23,9 +27,11 @@ export function generateVimeoPageUrl(vimeoId: string): string {
  * @returns The thumbnail URL for the video
  */
 export function generateVimeoThumbnailUrl(vimeoId: string, size: 'small' | 'medium' | 'large' = 'large'): string {
+  // Extract video ID if a full URL is provided
+  const videoId = extractVimeoId(vimeoId) || vimeoId;
   // Note: This is a basic implementation. For production, you might want to fetch
   // the actual thumbnail URL from Vimeo's API
-  return `https://vumbnail.com/${vimeoId}_${size}.jpg`;
+  return `https://vumbnail.com/${videoId}_${size}.jpg`;
 }
 
 /**
